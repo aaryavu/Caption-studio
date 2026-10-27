@@ -35,6 +35,14 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px soli
 label{font-size:.85rem;color:var(--mut)}
 input[type=range]{accent-color:var(--acc);vertical-align:middle}
 input[type=color]{width:34px;height:30px;border:0;background:none;padding:0}
+#tl{position:relative;height:46px;background:var(--bg);border:1px solid var(--line);border-radius:10px;overflow:hidden;touch-action:none;cursor:pointer;margin-bottom:10px}
+.blk{position:absolute;top:6px;bottom:6px;background:rgba(255,77,46,.35);border:1px solid var(--acc);border-radius:6px;font-size:.65rem;overflow:hidden;padding-left:3px;pointer-events:none}
+#ph{position:absolute;top:0;bottom:0;width:2px;background:var(--acc);left:0;pointer-events:none}
+.trow{display:flex;gap:6px;align-items:center;padding:6px 4px;border-top:1px solid var(--line);font-size:.8rem;flex-wrap:wrap}
+.trow.act{background:rgba(255,77,46,.14)}
+.trow .tt{flex:1 1 130px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow input{width:66px;font:inherit;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.trow button{padding:4px 8px;font-size:.75rem}
 /* styles */
 .s-beast .cap{font-family:'Anton';text-transform:uppercase;color:#fff;-webkit-text-stroke:3px #000;paint-order:stroke fill;font-size:clamp(28px,9vw,44px)}
 .s-hormozi .cap{font-family:'Anton';text-transform:uppercase;color:#fff;text-shadow:0 3px 0 #000,0 0 8px #000;font-size:clamp(26px,8vw,38px)}
@@ -89,14 +97,19 @@ input[type=color]{width:34px;height:30px;border:0;background:none;padding:0}
           <label>Start <input type="number" id="st" value="0" min="0" step="0.5" style="width:62px"> sec</label>
           <label>End <input type="number" id="en" value="0" min="0" step="0.5" style="width:62px"> sec</label>
         </div>
-        <p class="sub" style="margin:8px 0 0;font-size:.8rem">Text start se end tak words ke hisaab se barabar baant diya jaata hai. End 0 = video ke end tak.</p>
+        <p class="sub" style="margin:8px 0 0;font-size:.8rem">Har line = ek caption. Line break se caption alag karo. Start/End sirf Auto time ke liye hai.</p></div><div class="panel"><h2>2. Timeline</h2>
+<div id="tl"><div id="tlb"></div><div id="ph"></div></div>
+<div class="row"><button id="auto" class="ghost">Auto time</button><button id="tap">Tap sync</button><span id="tm" class="sub" style="margin:0;font-size:.8rem">0.0 / 0.0 s</span></div>
+<div class="row"><label>Sync <input type="range" id="off" min="-2" max="2" step="0.05" value="0"> <span id="ov">0.00s</span></label></div>
+<p class="sub" style="margin:8px 0;font-size:.8rem">Timeline par tap ya drag karke video aage-peeche karo. Caption late dikhe to Sync ko minus mein karo, jaldi dikhe to plus mein. Tap sync: video chalegi, har line bolte hi button dabao. Ya neeche har line ka time khud set karo.</p>
+<div id="rows"></div>
       </div>
       <div class="panel">
-        <h2>2. Style</h2>
+        <h2>3. Style</h2>
         <div class="styles" id="styles"></div>
         <div class="row">
           <label>Size <input type="range" id="sz" min="70" max="140" value="100"></label>
-          <label>Upar-neeche <input type="range" id="pos" min="5" max="80" value="18"></label>
+          <label>Upar-neeche <input type="range" id="pos" min="5" max="80" value="18"></label></div></div><div class="panel"><h2>4. Export</h2><div class="row"><label>Resolution <select id="res"><option value="480">480p</option><option value="720" selected>720p HD</option><option value="1080">1080p Full HD</option><option value="1440">1440p 2K</option></select></label><label>Frame rate <select id="fps"><option value="24">24 fps</option><option value="30" selected>30 fps</option><option value="50">50 fps</option><option value="60">60 fps</option></select></label><button id="exp">Export karo</button></div><p id="xs" class="sub" style="margin:10px 0 0;font-size:.8rem">Resolution video ki chhoti side hoti hai (jaise 1080p = 1080x1920 reel). Original se bada nahi hoga. Export video ki poori length jitna time leta hai, tab khula rakho.</p><div id="xo"></div>
         </div>
       </div>
     </div>
@@ -112,25 +125,26 @@ S.forEach(function(s){var b=document.createElement('button');b.className='sty s-
 function apply(){stage.className='stage s-'+cur[0]}
 apply();
 function words(){return document.getElementById('txt').value.trim().split(/\s+/).filter(Boolean)}
+var segs=[],off=0,tapMode=false,tk=0,lastJ=-9;
+function dur(){return v.duration||10}
+function state(t){var tt=t-off;for(var j=0;j<segs.length;j++){var g=segs[j];if(tt>=g.s&&tt<g.e){var w=g.t.split(/\s+/),k=w.length;return {w:w,wi:Math.min(k-1,Math.floor((tt-g.s)/(g.e-g.s)*k)),tt:tt,s:g.s,e:g.e,j:j}}}return null}
 function render(force){
- var w=words();if(!w.length){cap.innerHTML='';return}
- var d=v.duration||10,st=+document.getElementById('st').value||0,en=+document.getElementById('en').value||d;
- if(en<=st)en=d;
- var t=v.currentTime;
- if(!v.src){t=(Date.now()/450)%(w.length+2);var i=Math.floor(t)}else{
-  if(t<st||t>en){cap.innerHTML='';last=-1;return}
-  var i=Math.min(w.length-1,Math.floor((t-st)/(en-st)*w.length))}
- i=Math.min(i,w.length-1);
- var n=cur[3],c=Math.floor(i/n),key=c+'|'+i;
+ var S;
+ if(!v.src){var w0=words(),tm=(Date.now()/450)%(w0.length+2);S=w0.length?{w:w0,wi:Math.min(w0.length-1,Math.floor(tm)),j:-2}:null}else S=state(v.currentTime);
+ if(!S){if(cap.innerHTML)cap.innerHTML='';last=-1;return}
+ var w=S.w,i=S.wi,n=cur[3],c=Math.floor(i/n),ck=S.j+'|'+c,key=ck+'|'+i;
  if(!force&&key===last)return;
- if(!force&&last!==-1&&String(last).split('|')[0]==c){[].forEach.call(cap.children,function(e,k){var on=c*n+k===i;e.classList.toggle('on',on);if(c*n+k<=i)e.classList.add('seen')});last=key;return}
+ if(!force&&last!==-1&&String(last).split('|').slice(0,2).join('|')===ck){[].forEach.call(cap.children,function(e,k){var on=c*n+k===i;e.classList.toggle('on',on);if(c*n+k<=i)e.classList.add('seen')});last=key;return}
  last=key;cap.innerHTML='';
  w.slice(c*n,c*n+n).forEach(function(x,k){var e=document.createElement('span');e.textContent=x;if(c*n+k<=i)e.classList.add('seen');if(c*n+k===i)e.classList.add('on');cap.appendChild(e)});
 }
-function loop(){render(false);requestAnimationFrame(loop)}loop();
+function upd(){var ph=document.getElementById('ph'),d=dur(),t=v.currentTime||0;ph.style.left=Math.min(100,t/d*100)+'%';document.getElementById('tm').textContent=t.toFixed(1)+' / '+(v.duration?d.toFixed(1):'0.0')+' s';
+ if(!v.src||!segs.length)return;var S=state(t),j=S?S.j:-1;if(j!==lastJ){var o=document.getElementById('r'+lastJ),nw=document.getElementById('r'+j);if(o)o.classList.remove('act');if(nw)nw.classList.add('act');lastJ=j}}
+function loop(){render(false);upd();requestAnimationFrame(loop)}loop();
+
 function msg(t){document.getElementById('msg').textContent=t}
 function load(f){if(!f)return;msg('Load ho raha hai: '+f.name);document.getElementById('empty').style.display='none';
-v.onloadedmetadata=function(){document.getElementById('en').value=Math.round(v.duration*10)/10;msg('Video ready: '+f.name);v.play().catch(function(){})};
+v.onloadedmetadata=function(){document.getElementById('en').value=Math.round(v.duration*10)/10;autoTime();msg('Video ready: '+f.name);v.play().catch(function(){})};
 var tried=0;v.onerror=function(){tried++;if(tried===1){msg('Doosra tarika try ho raha hai (upload)...');var ok=window.claude&&claude.use;if(!ok){v.onerror();return}claude.use('assets').then(function(a){if(!a)throw 0;return a.upload(f)}).then(function(r){v.src=r.url}).catch(function(){v.onerror()})}else if(tried===2){var rd=new FileReader();rd.onload=function(){v.src=rd.result};rd.readAsDataURL(f)}else{msg('Video play nahi ho paya. MP4 (H.264) ya WebM file try karo, ya file ko browser mein seedha kholo.')}};
 try{v.src=URL.createObjectURL(f)}catch(e){v.onerror()}last=-1}
 var fi=document.getElementById('file');
@@ -138,7 +152,89 @@ fi.onchange=function(){load(fi.files[0])};
 fi.onclick=function(){this.value=''};stage.ondragover=function(e){e.preventDefault()};stage.ondrop=function(e){e.preventDefault();load(e.dataTransfer.files[0])};document.getElementById('file2').onchange=function(){load(this.files[0])};
 document.getElementById('sz').oninput=function(){cap.style.fontSize=(this.value/100*parseFloat(getComputedStyle(cap).fontSize))+'px';cap.style.zoom=this.value/100;cap.style.fontSize=''};
 document.getElementById('pos').oninput=function(){cap.style.bottom=this.value+'%'};
-document.getElementById('txt').oninput=function(){last=-1};
+document.getElementById('txt').oninput=function(){last=-1;syncSegs();build()};
+var C={beast:{f:'Anton',k:.1,up:1,fill:'#fff',st:['#000',.28]},hormozi:{f:'Anton',k:.09,up:1,fill:'#fff',act:'#ffe600',st:['#000',.2]},karaoke:{w:800,k:.075,fill:'#fff',act:'#2dff8a',dim:.55,sh:1,pop:1},neon:{w:800,k:.075,fill:'#fff',neon:1,act:'#ff6bf5'},glass:{w:700,k:.07,fill:'#fff',glass:1,ul:1},sticker:{w:800,k:.075,up:1,fill:'#111',box:['#fff','#ffdd33','#111']},pop:{f:'Anton',k:.1,up:1,pal:['#ffe600','#fff','#3dff7a','#ff5cc8'],st:['#000',.2]},bounce:{f:'Bangers',k:.105,fill:'#fff',act:'#ffd23f',st:['#000',.2],hide:1,bounce:1},underline:{w:800,k:.075,fill:'#fff',sh:1,ul:1},boxed:{w:800,k:.075,up:1,fill:'#fff',ba:'#111',box:['#e11d48','#facc15']},hand:{f:'Caveat',w:700,k:.105,fill:'#fff',act:'#ffd1ec',sh:1},shake:{f:'Anton',k:.095,up:1,fill:'#fff',gl:1},minimal:{w:500,k:.05,fill:'#fff',sh:1}};
+function rr(x,a,b,w,h,r){x.beginPath();if(x.roundRect)x.roundRect(a,b,w,h,r);else x.rect(a,b,w,h)}
+function drawCap(x,W,H,t){var S=state(t);if(!S)return;var i=S.wi;var c=C[cur[0]],n=cur[3],w=S.w,ch=Math.floor(i/n),ws=w.slice(ch*n,ch*n+n),fs=W*c.k*document.getElementById('sz').value/100,gap=fs*.3,pad=c.box?fs*.18:0;
+x.font=(c.w||400)+' '+fs+'px '+(c.f||'Poppins')+',sans-serif';x.textBaseline='middle';x.textAlign='center';x.lineJoin='round';
+var tx=ws.map(function(s){return c.up?s.toUpperCase():s}),wd=tx.map(function(s){return x.measureText(s).width+pad*2}),L=[[]],lw=0,mw=W*.88;
+wd.forEach(function(q,k){if(lw+q>mw&&L[L.length-1].length){L.push([]);lw=0}L[L.length-1].push(k);lw+=q+gap});
+var lh=fs*1.3,y0=H*(1-document.getElementById('pos').value/100)-L.length*lh;
+function lwid(l){var s=-gap;l.forEach(function(k){s+=wd[k]+gap});return s}
+if(c.glass){var mx=0;L.forEach(function(l){mx=Math.max(mx,lwid(l))});mx+=fs*.8;x.fillStyle='rgba(255,255,255,.2)';x.strokeStyle='rgba(255,255,255,.45)';x.lineWidth=2;rr(x,(W-mx)/2,y0-fs*.1,mx,L.length*lh+fs*.2,fs*.5);x.fill();x.stroke()}
+L.forEach(function(l,li){var px=(W-lwid(l))/2,cy=y0+li*lh+lh/2;l.forEach(function(k){var gi=ch*n+k,on=gi===i,ww=wd[k],cx=px+ww/2,tw=ww-pad*2;px+=ww+gap;if(c.hide&&gi>i)return;
+x.save();x.globalAlpha=(c.dim&&!on)?c.dim:1;var sc=1,ty=0,rot=0;if(c.pop&&on)sc=1.12;
+if(c.bounce&&on){var ag=Math.min(1,Math.max(0,(S.tt-(S.s+gi/w.length*(S.e-S.s)))/.45)),e=1-Math.pow(1-ag,3);ty=-(1-e)*fs*1.2;sc=.6+.4*e}
+if(c.box&&c.box[2])rot=k%2?.035:-.035;
+x.translate(cx,cy+ty);x.rotate(rot);x.scale(sc,sc);
+if(c.box){x.fillStyle=on?c.box[1]:c.box[0];rr(x,-ww/2,-fs*.62,ww,fs*1.24,fs*.2);x.fill();if(c.box[2]){x.strokeStyle=c.box[2];x.lineWidth=fs*.07;x.stroke()}}
+var col=c.pal?c.pal[gi%4]:(on&&c.box&&c.ba?c.ba:(on&&c.act&&!c.neon?c.act:c.fill));
+if(c.sh){x.shadowColor='#000';x.shadowBlur=fs*.15;x.shadowOffsetY=fs*.05}
+if(c.st){x.strokeStyle=c.st[0];x.lineWidth=fs*c.st[1];x.strokeText(tx[k],0,0)}
+if(c.gl){var j=on?Math.random()*4-2:0;x.fillStyle='#f0f';x.fillText(tx[k],fs*.06+j,j);x.fillStyle='#0ff';x.fillText(tx[k],-fs*.06-j,-j)}
+if(c.neon){x.shadowColor=on?'#f0f':'#0ff';x.shadowBlur=fs*.5;x.fillStyle=on?'#ff6bf5':'#fff';x.fillText(tx[k],0,0)}
+x.fillStyle=col;x.fillText(tx[k],0,0);x.shadowBlur=0;x.shadowOffsetY=0;
+if(c.ul&&on){x.fillStyle=c.glass?'#fff':'#ff4d2e';x.fillRect(-tw/2,fs*.55,tw,Math.max(3,fs*.09))}
+x.restore()})})}
+function parseLines(){return document.getElementById('txt').value.split('\n').map(function(q){return q.trim()}).filter(Boolean)}
+function syncSegs(){var L=parseLines(),d=dur();segs=L.map(function(t,i){var o=segs[i];if(o)return {t:t,s:o.s,e:o.e};var ps=i&&segs[i-1]?Math.max(0,segs[i-1].e):0,pe=Math.min(d,ps+Math.max(1.2,t.split(/\s+/).length*.4));return {t:t,s:ps,e:pe}})}
+function autoTime(){var d=dur(),st=+document.getElementById('st').value||0,en=+document.getElementById('en').value||d;if(en<=st)en=d;var L=parseLines();
+ if(L.length===1){var w=L[0].split(/\s+/),a=[];for(var i=0;i<w.length;i+=5)a.push(w.slice(i,i+5).join(' '));L=a;document.getElementById('txt').value=L.join('\n')}
+ var tw=L.reduce(function(m,q){return m+q.split(/\s+/).length},0),c=st;segs=L.map(function(t){var len=(en-st)*t.split(/\s+/).length/tw,s=c;c+=len;return {t:t,s:s,e:c}});build();last=-1}
+function build(){var d=dur(),tb=document.getElementById('tlb'),rw=document.getElementById('rows');tb.innerHTML='';rw.innerHTML='';lastJ=-9;
+ segs.forEach(function(g,j){
+  if(g.e>g.s){var b=document.createElement('div');b.className='blk';b.style.left=g.s/d*100+'%';b.style.width=Math.max(.6,(g.e-g.s)/d*100)+'%';b.textContent=j+1;tb.appendChild(b)}
+  var r=document.createElement('div');r.className='trow';r.id='r'+j;
+  r.innerHTML='<b></b><span class="tt"></span><input type="number" step="0.1" min="0" class="ts" aria-label="start"><input type="number" step="0.1" min="0" class="te" aria-label="end"><button class="ghost sS">S=abhi</button><button class="ghost sE">E=abhi</button><button class="ghost pl">&#9654;</button>';
+  r.querySelector('b').textContent=j+1;r.querySelector('.tt').textContent=g.t;
+  var ts=r.querySelector('.ts'),te=r.querySelector('.te');ts.value=g.s<0?'':g.s.toFixed(2);te.value=g.e<0?'':g.e.toFixed(2);
+  ts.onchange=function(){g.s=+ts.value;build();last=-1};te.onchange=function(){g.e=+te.value;build();last=-1};
+  r.querySelector('.sS').onclick=function(){g.s=v.currentTime-off;if(g.e<=g.s)g.e=Math.min(dur(),g.s+1.5);build();last=-1};
+  r.querySelector('.sE').onclick=function(){g.e=v.currentTime-off;build();last=-1};
+  r.querySelector('.pl').onclick=function(){v.currentTime=Math.max(0,g.s+off);v.play()};
+  rw.appendChild(r)})}
+var tl=document.getElementById('tl');
+function seekTo(e){var r=tl.getBoundingClientRect();v.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*dur();last=-1}
+tl.onpointerdown=function(e){if(!v.src)return;try{tl.setPointerCapture(e.pointerId)}catch(x){}seekTo(e);tl.onpointermove=seekTo};
+tl.onpointerup=tl.onpointercancel=function(){tl.onpointermove=null};
+document.getElementById('auto').onclick=function(){if(!v.src){msg('Pehle video import karo.');return}autoTime()};
+document.getElementById('off').oninput=function(){off=+this.value;document.getElementById('ov').textContent=(off>0?'+':'')+off.toFixed(2)+'s';last=-1};
+var tapb=document.getElementById('tap');
+function tapLabel(){tapb.textContent=tapMode?(tk<segs.length?'Line '+(tk+1)+'/'+segs.length+' shuru (tap)':'End mark karo (tap)'):'Tap sync'}
+function tapEnd(){if(!tapMode)return;if(segs.length&&tk>=segs.length){var g=segs[segs.length-1];g.e=Math.max(g.s+.3,v.currentTime-off)}tapMode=false;v.pause();tapLabel();build();last=-1}
+v.addEventListener('ended',function(){if(tapMode){var g=segs[tk-1];if(g)g.e=Math.max(g.s+.3,dur());tapMode=false;tapLabel();build()}});
+tapb.onclick=function(){
+ if(!v.src||!segs.length){msg('Pehle video import karo aur text likho.');return}
+ if(!tapMode){tapMode=true;tk=0;segs.forEach(function(g){g.s=g.e=-1});v.currentTime=0;v.play();build();tapLabel();return}
+ var t=v.currentTime-off;
+ if(tk<segs.length){segs[tk].s=t;segs[tk].e=Math.min(dur(),t+1.5);if(tk>0)segs[tk-1].e=Math.max(segs[tk-1].s+.2,t);tk++;build();tapLabel()}else tapEnd()};
+syncSegs();build();
+var ac,asrc,adst;
+function xs(t){document.getElementById('xs').textContent=t}
+document.getElementById('exp').onclick=async function(){
+var btn=this;if(!v.src||!v.videoWidth){xs('Pehle video import karo.');return}
+var ms=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'],mt=window.MediaRecorder&&ms.filter(function(m){return MediaRecorder.isTypeSupported(m)})[0];
+if(!mt){xs('Is browser mein export support nahi hai. Chrome ya Edge use karo.');return}
+var R=+document.getElementById('res').value,F=+document.getElementById('fps').value,vw=v.videoWidth,vh=v.videoHeight,s=Math.min(1,R/Math.min(vw,vh)),W=Math.round(vw*s/2)*2,H=Math.round(vh*s/2)*2;
+btn.disabled=true;document.getElementById('xo').innerHTML='';
+try{
+var tracks=[];try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(!asrc){asrc=ac.createMediaElementSource(v);adst=ac.createMediaStreamDestination()}asrc.disconnect();asrc.connect(adst);await ac.resume();tracks=adst.stream.getAudioTracks()}catch(e){}
+await Promise.all(['400 40px Anton','400 40px Bangers','700 40px Caveat','800 40px Poppins','500 40px Poppins','700 40px Poppins'].map(function(f){return document.fonts.load(f).catch(function(){})}));
+var cv=document.createElement('canvas');cv.width=W;cv.height=H;var x=cv.getContext('2d'),out=cv.captureStream(F);tracks.forEach(function(k){out.addTrack(k)});
+var rec=new MediaRecorder(out,{mimeType:mt,videoBitsPerSecond:Math.round(W*H*F*.1)}),parts=[];rec.ondataavailable=function(e){if(e.data.size)parts.push(e.data)};
+var stopped=new Promise(function(r){rec.onstop=r});
+v.pause();v.currentTime=0;await new Promise(function(r){var d=function(){v.removeEventListener('seeked',d);r()};v.addEventListener('seeked',d);setTimeout(d,800)});
+var fin=false;v.onended=function(){fin=true};
+rec.start(250);await v.play();
+(function f(){x.drawImage(v,0,0,W,H);drawCap(x,W,H,v.currentTime);xs('Export ho raha hai... '+Math.round(v.currentTime/(v.duration||1)*100)+'% (tab khula rakho)');if(fin||v.ended){rec.stop()}else requestAnimationFrame(f)})();
+await stopped;v.onended=null;
+var ext=mt.indexOf('mp4')>-1?'mp4':'webm',b=new Blob(parts,{type:mt.split(';')[0]}),u=URL.createObjectURL(b),a=document.createElement('a');
+a.className='btn';a.href=u;a.download='captioned-'+W+'x'+H+'-'+F+'fps.'+ext;a.textContent='Download karo ('+(b.size/1048576).toFixed(1)+' MB)';a.style.display='inline-block';a.style.marginTop='10px';a.style.textDecoration='none';
+var pv=document.createElement('video');pv.src=u;pv.controls=true;pv.playsInline=true;pv.style.cssText='display:block;width:100%;max-width:300px;margin-top:10px;border-radius:10px';
+var xo=document.getElementById('xo');xo.appendChild(a);xo.appendChild(pv);
+xs('Ho gaya! '+W+'x'+H+' | '+F+' fps | '+ext.toUpperCase()+(R>Math.min(vw,vh)?' (original video se bada nahi ho sakta, isliye original size rakha)':''));
+}catch(e){xs('Export nahi ho paya: '+(e&&e.message||e))}
+finally{try{if(asrc)asrc.disconnect();if(asrc&&ac)asrc.connect(ac.destination)}catch(e){}btn.disabled=false}};
 </script>
 </body>
 </html>
