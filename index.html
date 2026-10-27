@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caption Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bangers&family=Caveat:wght@700&family=Poppins:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f3ef;--ink:#1d1b24;--mut:#6d6a78;--card:#fff;--line:#dedad2;--acc:#ff4d2e;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17151c;--ink:#f3f1f7;--mut:#a29fb0;--card:#221f2a;--line:#37333f;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Poppins',system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding:18px 16px 40px}
+h1{font-family:'Anton',sans-serif;font-weight:400;font-size:2.4rem;margin:6px 0 2px;letter-spacing:.5px}
+.sub{color:var(--mut);margin:0 0 18px;font-size:.95rem}
+.grid{display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:820px){.grid{grid-template-columns:340px 1fr;align-items:start}}
+.stage{position:relative;background:#000;border-radius:14px;overflow:hidden;aspect-ratio:9/16;max-height:78vh;margin:0 auto;width:100%;max-width:340px}
+.stage video{width:100%;height:100%;object-fit:contain;display:block}
+.empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#cfcbd8;text-align:center;padding:20px;gap:10px;cursor:pointer}
+.empty b{font-size:1.1rem}
+.cap{position:absolute;left:6%;right:6%;bottom:18%;text-align:center;pointer-events:none;font-size:clamp(20px,6.4vw,30px);line-height:1.2;display:flex;flex-wrap:wrap;justify-content:center;gap:.12em .3em}
+.cap span{display:inline-block}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.panel h2{font-size:1rem;margin:0 0 10px}
+textarea{width:100%;min-height:96px;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;background:var(--bg);color:var(--ink);resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+button,.btn{font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 14px;background:var(--ink);color:var(--bg);cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.styles{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.sty{background:#1b1922;color:#fff;border:2px solid transparent;border-radius:10px;padding:14px 6px;min-height:62px;display:flex;align-items:center;justify-content:center;font-size:.95rem;text-align:center}
+.sty[aria-pressed=true]{border-color:var(--acc)}
+.sty small{display:block;font-family:'Poppins';font-size:.62rem;font-weight:500;color:#aaa;margin-top:2px}
+label{font-size:.85rem;color:var(--mut)}
+input[type=range]{accent-color:var(--acc);vertical-align:middle}
+input[type=color]{width:34px;height:30px;border:0;background:none;padding:0}
+/* styles */
+.s-beast .cap{font-family:'Anton';text-transform:uppercase;color:#fff;-webkit-text-stroke:3px #000;paint-order:stroke fill;font-size:clamp(28px,9vw,44px)}
+.s-hormozi .cap{font-family:'Anton';text-transform:uppercase;color:#fff;text-shadow:0 3px 0 #000,0 0 8px #000;font-size:clamp(26px,8vw,38px)}
+.s-hormozi .on{color:#ffe600}
+.s-karaoke .cap{font-weight:800;color:#fff;text-shadow:0 2px 6px #000}
+.s-karaoke span{opacity:.55}.s-karaoke .on{opacity:1;color:#2dff8a;transform:scale(1.12)}
+.s-neon .cap{font-weight:800;color:#fff;text-shadow:0 0 6px #0ff,0 0 16px #0ff,0 0 32px #08f}
+.s-neon .on{color:#ff6bf5;text-shadow:0 0 6px #f0f,0 0 18px #f0f,0 0 34px #f0f}
+.s-glass .cap{font-weight:700;color:#fff;background:rgba(255,255,255,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.4);border-radius:16px;padding:10px 14px;left:8%;right:8%;display:block;flex-wrap:nowrap}
+.s-glass span{margin:0 .15em}.s-glass .on{text-decoration:underline;text-underline-offset:4px}
+.s-sticker .cap{font-family:'Poppins';font-weight:800;text-transform:uppercase}
+.s-sticker span{background:#fff;color:#111;padding:.05em .35em;border-radius:8px;box-shadow:0 3px 0 #111;border:2px solid #111;transform:rotate(-2deg)}
+.s-sticker span:nth-child(even){transform:rotate(2deg)}.s-sticker .on{background:#ffdd33}
+.s-pop .cap{font-family:'Anton';text-transform:uppercase;font-size:clamp(28px,9vw,44px);-webkit-text-stroke:2px #000;paint-order:stroke fill}
+.s-pop span:nth-child(4n+1){color:#ffe600}.s-pop span:nth-child(4n+2){color:#fff}.s-pop span:nth-child(4n+3){color:#3dff7a}.s-pop span:nth-child(4n){color:#ff5cc8}
+.s-bounce .cap{font-family:'Bangers';letter-spacing:1px;color:#fff;-webkit-text-stroke:2px #000;paint-order:stroke fill;font-size:clamp(30px,9.5vw,46px)}
+.s-bounce span{opacity:0}.s-bounce .seen{opacity:1}.s-bounce .on{animation:bn .45s cubic-bezier(.3,1.6,.5,1);color:#ffd23f}
+@keyframes bn{from{transform:translateY(-40px) scale(.6)}to{transform:none}}
+.s-minimal .cap{font-weight:500;color:#fff;font-size:clamp(15px,4.4vw,20px);text-shadow:0 1px 4px #000;bottom:8%}
+.s-underline .cap{font-weight:800;color:#fff;text-shadow:0 2px 6px #000}
+.s-underline span{background:linear-gradient(var(--acc),var(--acc)) 0 100%/0 5px no-repeat;transition:background-size .2s}
+.s-underline .on{background-size:100% 5px}
+.s-boxed .cap{font-weight:800;color:#fff;text-transform:uppercase}
+.s-boxed span{background:#e11d48;padding:.05em .35em;border-radius:4px}.s-boxed .on{background:#facc15;color:#111}
+.s-hand .cap{font-family:'Caveat';font-size:clamp(30px,9vw,44px);color:#fff;text-shadow:0 2px 6px #000}
+.s-hand .on{color:#ffd1ec}
+.s-shake .on{animation:sk .18s infinite}
+.s-shake .cap{font-family:'Anton';text-transform:uppercase;color:#fff;text-shadow:3px 0 #f0f,-3px 0 #0ff;font-size:clamp(28px,9vw,42px)}
+@keyframes sk{0%{transform:translate(2px,-1px)}50%{transform:translate(-2px,2px)}100%{transform:translate(1px,1px)}}
+@media(prefers-reduced-motion:reduce){.s-bounce .on,.s-shake .on{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Caption Studio</h1>
+  <p class="sub">Video daalo, text likho, style chuno. Preview turant dikhega.</p>
+  <div class="grid">
+    <div>
+      <div class="stage" id="stage" class="">
+        <video id="v" playsinline controls></video>
+        <label class="empty" id="empty" for="file"><b>Video import karo</b><span>Yahan tap karo ya file chuno</span></label>
+        <div class="cap" id="cap" aria-live="off"></div>
+      </div>
+      <input type="file" id="file" accept="video/*,.mp4,.mov,.webm,.mkv" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+    </div>
+    <div>
+      <div class="panel">
+        <h2>1. Video aur caption text</h2><input type="file" id="file2" accept="video/*" style="max-width:100%;margin-bottom:8px"><p id="msg" class="sub" style="margin:0 0 8px;font-size:.8rem"></p>
+        <textarea id="txt" aria-label="Caption text">Doston aaj main aapko batane wala hoon ki kaise sirf ek idea se apna business grow karein</textarea>
+        <div class="row">
+          <label class="btn" for="file" style="background:transparent;color:var(--ink);border:1px solid var(--line)">Video chuno</label>
+          <label>Start <input type="number" id="st" value="0" min="0" step="0.5" style="width:62px"> sec</label>
+          <label>End <input type="number" id="en" value="0" min="0" step="0.5" style="width:62px"> sec</label>
+        </div>
+        <p class="sub" style="margin:8px 0 0;font-size:.8rem">Text start se end tak words ke hisaab se barabar baant diya jaata hai. End 0 = video ke end tak.</p>
+      </div>
+      <div class="panel">
+        <h2>2. Style</h2>
+        <div class="styles" id="styles"></div>
+        <div class="row">
+          <label>Size <input type="range" id="sz" min="70" max="140" value="100"></label>
+          <label>Upar-neeche <input type="range" id="pos" min="5" max="80" value="18"></label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+var S=[["beast","Beast","bada + outline",1],["hormozi","Hormozi","yellow highlight",3],["karaoke","Karaoke","word glow",4],["neon","Neon","glow",3],["glass","Glass","blur box",5],["sticker","Sticker","sticker words",3],["pop","Color-pop","rang-birange",2],["bounce","Bounce","girke bounce",2],["underline","Underline","line sweep",4],["boxed","Boxed","color box",3],["hand","Handwritten","pen style",4],["shake","Glitch","shake",2],["minimal","Minimal","clean",6]];
+var cur=S[1],v=document.getElementById('v'),cap=document.getElementById('cap'),stage=document.getElementById('stage'),last=-1;
+var box=document.getElementById('styles');
+S.forEach(function(s){var b=document.createElement('button');b.className='sty s-'+s[0];b.setAttribute('aria-pressed',s===cur);
+ b.innerHTML='<span><span class="nm" style="font-weight:700">'+s[1]+'</span><small>'+s[2]+'</small></span>';
+ b.onclick=function(){cur=s;[].forEach.call(box.children,function(c){c.setAttribute('aria-pressed','false')});b.setAttribute('aria-pressed','true');apply();last=-1;render(true)};box.appendChild(b)});
+function apply(){stage.className='stage s-'+cur[0]}
+apply();
+function words(){return document.getElementById('txt').value.trim().split(/\s+/).filter(Boolean)}
+function render(force){
+ var w=words();if(!w.length){cap.innerHTML='';return}
+ var d=v.duration||10,st=+document.getElementById('st').value||0,en=+document.getElementById('en').value||d;
+ if(en<=st)en=d;
+ var t=v.currentTime;
+ if(!v.src){t=(Date.now()/450)%(w.length+2);var i=Math.floor(t)}else{
+  if(t<st||t>en){cap.innerHTML='';last=-1;return}
+  var i=Math.min(w.length-1,Math.floor((t-st)/(en-st)*w.length))}
+ i=Math.min(i,w.length-1);
+ var n=cur[3],c=Math.floor(i/n),key=c+'|'+i;
+ if(!force&&key===last)return;
+ if(!force&&last!==-1&&String(last).split('|')[0]==c){[].forEach.call(cap.children,function(e,k){var on=c*n+k===i;e.classList.toggle('on',on);if(c*n+k<=i)e.classList.add('seen')});last=key;return}
+ last=key;cap.innerHTML='';
+ w.slice(c*n,c*n+n).forEach(function(x,k){var e=document.createElement('span');e.textContent=x;if(c*n+k<=i)e.classList.add('seen');if(c*n+k===i)e.classList.add('on');cap.appendChild(e)});
+}
+function loop(){render(false);requestAnimationFrame(loop)}loop();
+function msg(t){document.getElementById('msg').textContent=t}
+function load(f){if(!f)return;msg('Load ho raha hai: '+f.name);document.getElementById('empty').style.display='none';
+v.onloadedmetadata=function(){document.getElementById('en').value=Math.round(v.duration*10)/10;msg('Video ready: '+f.name);v.play().catch(function(){})};
+var tried=0;v.onerror=function(){tried++;if(tried===1){msg('Doosra tarika try ho raha hai (upload)...');var ok=window.claude&&claude.use;if(!ok){v.onerror();return}claude.use('assets').then(function(a){if(!a)throw 0;return a.upload(f)}).then(function(r){v.src=r.url}).catch(function(){v.onerror()})}else if(tried===2){var rd=new FileReader();rd.onload=function(){v.src=rd.result};rd.readAsDataURL(f)}else{msg('Video play nahi ho paya. MP4 (H.264) ya WebM file try karo, ya file ko browser mein seedha kholo.')}};
+try{v.src=URL.createObjectURL(f)}catch(e){v.onerror()}last=-1}
+var fi=document.getElementById('file');
+fi.onchange=function(){load(fi.files[0])};
+fi.onclick=function(){this.value=''};stage.ondragover=function(e){e.preventDefault()};stage.ondrop=function(e){e.preventDefault();load(e.dataTransfer.files[0])};document.getElementById('file2').onchange=function(){load(this.files[0])};
+document.getElementById('sz').oninput=function(){cap.style.fontSize=(this.value/100*parseFloat(getComputedStyle(cap).fontSize))+'px';cap.style.zoom=this.value/100;cap.style.fontSize=''};
+document.getElementById('pos').oninput=function(){cap.style.bottom=this.value+'%'};
+document.getElementById('txt').oninput=function(){last=-1};
+</script>
+</body>
+</html>
